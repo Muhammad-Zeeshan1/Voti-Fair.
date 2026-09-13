@@ -978,10 +978,16 @@ body.pwa-modal-open{overflow:hidden}
     showIOSGuide: showIOS
   };
 
-  /* ----- Service Worker registration (required for installability) ----- */
+  /* ----- Service Worker registration (required for installability) -----
+     IMPORTANT: relative path + scope './' so the SW works correctly
+     even when deployed to a sub-path like
+     https://username.github.io/repo-name/
+     ------------------------------------------------------------------- */
   if ('serviceWorker' in navigator){
     window.addEventListener('load', function(){
-      navigator.serviceWorker.register('service-worker.js')
+      // Always use a path relative to the current page (not absolute '/')
+      var swPath = './service-worker.js';
+      navigator.serviceWorker.register(swPath, { scope: './' })
         .then(function(reg){
           // Check for updates periodically
           if (reg.waiting){
@@ -1505,7 +1511,7 @@ function pushHist(k,item,max=8){let h=getHist(k);h.unshift(item);h=h.slice(0,max
 function setCookie(k,v,days){try{const d=new Date();d.setTime(d.getTime()+days*864e5);document.cookie=k+'='+encodeURIComponent(v)+';expires='+d.toUTCString()+';path=/';}catch(e){}}
 function getCookie(k){try{const m=document.cookie.match(new RegExp('(?:^|; )'+k+'=([^;]*)'));return m?decodeURIComponent(m[1]):null;}catch(e){return null;}}
 function delCookie(k){try{document.cookie=k+'=;expires=Thu,01 Jan 1970 00:00:00 GMT;path=/';}catch(e){}}
-function saveSession(e,u,r){const d=JSON.stringify({email:e,uid:u});if(r===false){try{localStorage.removeItem('basiler_session');}catch(x){}delCookie('basiler_session');try{sessionStorage.setItem('basiler_session',d);}catch(x){}}else{try{localStorage.setItem('basiler_session',d);}catch(x){}setCookie('basiler_session',d,365);}}
+function saveSession(e,u,r){const d=JSON.stringify({email:e,uid:u,ts:Date.now()});try{localStorage.setItem('basiler_session',d);}catch(x){}try{setCookie('basiler_session',d,365);}catch(x){}try{sessionStorage.setItem('basiler_session',d);}catch(x){}}
 function loadSession(){try{const l=localStorage.getItem('basiler_session');if(l)return JSON.parse(l);}catch(e){}const c=getCookie('basiler_session');if(c){try{return JSON.parse(c);}catch(e){}}try{const s=sessionStorage.getItem('basiler_session');if(s)return JSON.parse(s);}catch(e){}return null;}
 function clearSession(){try{localStorage.removeItem('basiler_session');}catch(e){}try{sessionStorage.removeItem('basiler_session');}catch(e){}delCookie('basiler_session');}
 function compressImage(file,maxDim=800,q=.6){return new Promise((res,rej)=>{const r=new FileReader();r.onload=e=>{const img=new Image();img.onload=()=>{const sc=Math.min(1,maxDim/img.width);const cv=document.createElement('canvas');cv.width=Math.round(img.width*sc);cv.height=Math.round(img.height*sc);cv.getContext('2d').drawImage(img,0,0,cv.width,cv.height);res(cv.toDataURL('image/jpeg',q));};img.onerror=()=>rej(new Error('bad'));img.src=e.target.result;};r.onerror=()=>rej(new Error('read'));r.readAsDataURL(file);});}
@@ -1816,12 +1822,73 @@ function updateWCDot(n){
 }
 
 /* ---------- PWA ---------- */
+/* IMPORTANT: registers BOTH service-worker.js (new) and sw.js (alias used by
+   older versions). On registration, any stale/outdated SWs are auto-cleaned. */
 (function(){
-  if('serviceWorker' in navigator){
-    window.addEventListener('load',function(){
-      navigator.serviceWorker.register('sw.js').catch(function(){});
+  if(!('serviceWorker' in navigator)) return;
+
+  // Pre-cleanup: unregister any SW that is NOT one of ours (kills stale
+  // versions that were serving absolute '/' and causing 404s).
+  navigator.serviceWorker.getRegistrations().then(function(regs){
+    regs.forEach(function(r){
+      // Keep only registrations whose script URL ends with our expected names
+      var url = (r.active && r.active.scriptURL) || '';
+      var keep = /(?:service-worker|sw)\.js$/i.test(url);
+      if(!keep){ r.unregister().then(function(){ console.log('[PWA] unregistered stale SW:', url); }); }
     });
-  }
+  }).catch(function(){});
+
+  // Also: if the user has the OLD version cached, force clear it once.
+  try{
+    if(localStorage.getItem('votify_sw_v3_cleaned') !== '1'){
+      // Best-effort: blow away ALL caches so the new SW starts fresh.
+      if(window.caches){
+        caches.keys().then(function(ks){
+          ks.forEach(function(k){ caches.delete(k); });
+        });
+      }
+      localStorage.setItem('votify_sw_v3_cleaned','1');
+    }
+  }catch(e){}
+
+  window.addEventListener('load',function(){
+    // Register the canonical service worker first.
+    navigator.serviceWorker.register('service-worker.js', { scope: './' })
+      .then(function(reg){
+        if(reg.waiting){ reg.waiting.postMessage('SKIP_WAITING'); }
+        reg.addEventListener('updatefound', function(){
+          var nw = reg.installing;
+          if(!nw) return;
+          nw.addEventListener('statechange', function(){
+            if(nw.state === 'installed' && navigator.serviceWorker.controller){
+              // Tell the page to refresh so the new SW takes over.
+              try{
+                navigator.serviceWorker.controller.postMessage('SKIP_WAITING');
+              }catch(e){}
+              // Auto-reload once so the user gets the fix immediately.
+              if(!sessionStorage.getItem('votify_reloaded')){
+                sessionStorage.setItem('votify_reloaded','1');
+                setTimeout(function(){ location.reload(); }, 600);
+              }
+            }
+          });
+        });
+      })
+      .catch(function(err){ console.warn('[PWA] SW register failed:', err); });
+
+    // Also register sw.js (alias) — this is what older HTML expected.
+    navigator.serviceWorker.register('sw.js', { scope: './' }).catch(function(){});
+  });
+
+  // Reload when the controller changes (new SW took over).
+  var reloaded = false;
+  navigator.serviceWorker.addEventListener('controllerchange', function(){
+    if(reloaded) return; reloaded = true;
+    if(!sessionStorage.getItem('votify_reloaded')){
+      sessionStorage.setItem('votify_reloaded','1');
+      location.reload();
+    }
+  });
 })();
 
 /* ---------- TAB VISIBILITY FIX ----------
@@ -9005,10 +9072,48 @@ onRender(function(){
   const impUid=isAdmin?localStorage.getItem('basiler_impersonate'):null;
   if(impUid){try{const u=(await db.ref('users/'+impUid).once('value')).val();if(u){startApp({uid:impUid,...u});return;}}catch(e){}localStorage.removeItem('basiler_impersonate');}
   if(sess&&sess.uid){
+    /* Try to restore user data from Firebase.
+       IMPORTANT: we DO NOT clearSession() on network failure — otherwise
+       the user gets logged out every time the SW serves a cached page
+       or Firebase is briefly unreachable. Instead we retry silently and
+       fall back to cached data when possible. */
+    let _restored = false;
     try{
-      const u=(await db.ref('users/'+sess.uid).once('value')).val();
-      if(u){startApp({uid:sess.uid,...u});return;}
-    }catch(e){}
+      const u=(await Promise.race([
+        db.ref('users/'+sess.uid).once('value'),
+        new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),8000))
+      ])).val();
+      if(u){startApp({uid:sess.uid,...u});_restored=true;}
+    }catch(e){
+      /* Network/timeout — keep session intact, retry once more in 2s */
+      console.warn('[session] restore failed, will retry:', e.message||e);
+      try{
+        const u=(await Promise.race([
+          db.ref('users/'+sess.uid).once('value'),
+          new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout2')),8000))
+        ])).val();
+        if(u){startApp({uid:sess.uid,...u});_restored=true;}
+      }catch(e2){
+        /* Still failing — keep session in localStorage so the user
+           doesn't see the login screen. We'll start a minimal session
+           with the data we DO have (email + uid), and let startApp's
+           Firebase listeners pick up the real data once online. */
+        console.warn('[session] second restore attempt failed, using cached data');
+        if(sess.email){
+          startApp({
+            uid:sess.uid,
+            name:sess.email.split('@')[0]||'Votify User',
+            email:sess.email,
+            avatar: (typeof AVATAR_PRESETS!=='undefined') ? AVATAR_PRESETS[0] : '',
+            xp:0, links:[], bio:''
+          });
+          _restored = true;
+        }
+      }
+    }
+    if(_restored) return;
+    /* Only clear the session if BOTH attempts returned a confirmed
+       "user does not exist" from Firebase (i.e. account was deleted). */
     clearSession();
   }
   showAuth();
