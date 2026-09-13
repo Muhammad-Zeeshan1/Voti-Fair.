@@ -1,0 +1,49 @@
+{
+  "name": "Votify — Opinion Arena",
+  "short_name": "Votify",
+  "description": "There your opinion is another life. Vote, chat, and share your opinion with the world.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "fullscreen", "minimal-ui"],
+  "orientation": "portrait",
+  "background_color": "#06070D",
+  "theme_color": "#06070D",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["social", "communication", "utilities"],
+  "icons": [
+    { "src": "favicon-32.png",  "sizes": "32x32",   "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png",    "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png",    "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-512.png",    "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png",    "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "apple-touch-icon.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Home",
+      "short_name": "Home",
+      "description": "Open the home feed",
+      "url": "/?p=home",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Create Poll",
+      "short_name": "Create",
+      "description": "Create a new poll",
+      "url": "/?p=create",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "Chat",
+      "short_name": "Chat",
+      "description": "Open world chat",
+      "url": "/?p=chat",
+      "icons": [{ "src": "icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
+  ],
+  "screenshots": [],
+  "prefer_related_applications": false
+}
