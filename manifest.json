@@ -1,0 +1,31 @@
+{
+  "name": "Votify Diamond — Opinion Arena",
+  "short_name": "Votify",
+  "description": "Votify Diamond: live Diamond Rooms chat, battles, quizzes, radio, background music, voice & video calls — one diamond app.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#06121F",
+  "theme_color": "#06B6D4",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
