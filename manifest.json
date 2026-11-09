@@ -1,0 +1,49 @@
+{
+  "name": "Votify Grand Operation",
+  "short_name": "Votify",
+  "description": "Opinion Arena — picture battles, XP, weekly arena, World Chatter and Diamond Rooms. All in one file.",
+  "id": "votify-grand-operation",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#0A0618",
+  "theme_color": "#06B6D4",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["social", "entertainment"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Create Battle",
+      "short_name": "Create",
+      "description": "Start a new opinion battle",
+      "url": "./index.html?v=view-create"
+    },
+    {
+      "name": "Leaderboard",
+      "short_name": "Top XP",
+      "description": "See the weekly arena rankings",
+      "url": "./index.html?v=view-leaderboard"
+    }
+  ]
+}

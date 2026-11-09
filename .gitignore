@@ -1,0 +1,17 @@
+# OS / editor junk
+.DS_Store
+Thumbs.db
+desktop.ini
+*.swp
+*~
+.vscode/
+.idea/
+
+# Logs & local env
+*.log
+.env
+.env.*
+
+# Node (not required to run this static app, kept for safety)
+node_modules/
+package-lock.json
